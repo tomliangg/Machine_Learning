@@ -1,6 +1,8 @@
 import pandas as pd
 import re
+import numpy as np
 from scipy import stats
+from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 dog_data = pd.read_csv("dog_rates_tweets.csv", parse_dates=['created_at'])
 #print(dog_data.head())
@@ -38,10 +40,25 @@ def to_timestamp(dtObj):
 data['timestamp'] = data['created_at'].apply(to_timestamp)
 print(data.head())
 
+x = data['timestamp']
+y = data['rating'] # y is the observed values
+X = x[:, np.newaxis]
+model = LinearRegression(fit_intercept=True)
+model.fit(X, y)
+# let's check the slope and intercept
+print(model.coef_[0], model.intercept_)
+
+y_fit = model.predict(X) # predicted values
+plt.hist(y - y_fit)
+# plt.show()
+plt.savefig('dog-rates-hist.png')
+plt.close() # close this plt so I can plt another figure
 
 
+# I will use the stats library to get p-value because it's difficult to do it with LinearRegression
 fit = stats.linregress(data['timestamp'], data['rating'])
-
+print(fit.pvalue)
+# pvalue is 8.85e-92 which is a lot smaller than 0.05 so we can confidently say that the slope is different from zero
 
 plt.xticks(rotation=25)
 plt.plot(data['created_at'], data['rating'], 'b.', alpha=0.5)
