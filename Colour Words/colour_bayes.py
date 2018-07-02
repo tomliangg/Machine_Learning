@@ -5,7 +5,9 @@ from skimage.color import lab2rgb
 import sys
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
-from sklearn.metrics import accuracy_score
+from skimage.color import rgb2lab
+from sklearn.preprocessing import FunctionTransformer
+from sklearn.pipeline import make_pipeline
 
 # representative RGB colours for each label, for nice display
 COLOUR_RGB = {
@@ -65,6 +67,10 @@ def plot_predictions(model, lum=71, resolution=256):
     plt.xlabel('A')
     plt.imshow(pixels)
 
+def transformer_rgb2lab(X):
+    X = X.reshape(1,-1,3)
+    return rgb2lab(X).reshape((-1,3))
+
 
 def main(infile):
     data = pd.read_csv(infile)
@@ -75,16 +81,18 @@ def main(infile):
     # TODO: build model_rgb to predict y from X.
     model_rgb = GaussianNB()
     model_rgb.fit(X_train, y_train) # train the model
-    y_predicted = model_rgb.predict(X_test)
 
     # TODO: print model_rgb's accuracy_score
-    print(accuracy_score(y_test, y_predicted))
     print(model_rgb.score(X_test, y_test))
 
-    # TODO: build model_lab to predict y from X by converting to LAB colour first.
-    
+    # TODO: build pipeline model model_lab to predict y from X by converting to LAB colour first.
+    # first step is a transformer that converts from RGB to LAB, and the second is a Gaussian classifier
+    # we also need to reshape the X data so that it can be put into rgb2lab function
+    model_lab = make_pipeline(FunctionTransformer(transformer_rgb2lab), GaussianNB())
+    model_lab.fit(X_train, y_train) # train the model
 
     # TODO: print model_lab's accuracy_score
+    print(model_lab.score(X_test, y_test))
 
     plot_predictions(model_rgb)
     plt.savefig('predictions_rgb.png')
